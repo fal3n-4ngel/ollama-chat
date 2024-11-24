@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 "use client";
 
 import React, { useState, useEffect, useRef } from "react";
@@ -8,7 +9,6 @@ import {
   Loader2,
   User,
   Bot,
-  Settings,
   ChevronDown,
 } from "lucide-react";
 import hljs from "highlight.js";

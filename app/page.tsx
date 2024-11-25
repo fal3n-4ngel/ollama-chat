@@ -10,6 +10,10 @@ import {
   User,
   Bot,
   ChevronDown,
+  Delete,
+  DeleteIcon,
+  LucideDelete,
+  Trash2Icon,
 } from "lucide-react";
 import hljs from "highlight.js";
 import "highlight.js/styles/github-dark.css";
@@ -47,15 +51,25 @@ interface ModelOption {
 }
 
 const MODELS: ModelOption[] = [
-  { id: "llava", name: "Llava", description: "Multimodal model for vision and language" },
-  { id: "codellama", name: "Code Llama", description: "Specialized for code generation" },
+  {
+    id: "llava",
+    name: "Llava",
+    description: "Multimodal model for vision and language",
+  },
+  {
+    id: "codellama",
+    name: "Code Llama",
+    description: "Specialized for code generation",
+  },
 ];
 
 const Avatar = ({ role }: { role: "user" | "assistant" }) => {
   return (
-    <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
-      role === "user" ? "bg-blue-500" : "bg-zinc-700"
-    }`}>
+    <div
+      className={`w-8 h-8 rounded-full flex items-center justify-center ${
+        role === "user" ? "bg-blue-500" : "bg-zinc-700"
+      }`}
+    >
       {role === "user" ? (
         <User className="w-5 h-5 text-white" />
       ) : (
@@ -99,7 +113,7 @@ const CodeBlock = ({ code, language }: { code: string; language: string }) => {
   };
 
   const highlightedCode = hljs.highlight(code, { language }).value;
-  
+
   return (
     <div className="relative group">
       <pre className="rounded-xl bg-zinc-900 p-6 my-4">
@@ -112,7 +126,9 @@ const CodeBlock = ({ code, language }: { code: string; language: string }) => {
         onClick={handleCopy}
         className="absolute top-4 right-4 p-2 bg-zinc-800 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200"
       >
-        <Copy className={`w-4 h-4 ${copied ? "text-green-400" : "text-zinc-400"}`} />
+        <Copy
+          className={`w-4 h-4 ${copied ? "text-green-400" : "text-zinc-400"}`}
+        />
       </button>
     </div>
   );
@@ -120,7 +136,11 @@ const CodeBlock = ({ code, language }: { code: string; language: string }) => {
 
 const formatMessage = (content: string) => {
   const codeBlockRegex = /```(\w+)?\n([\s\S]*?)```/g;
-  const parts: Array<{ type: "text" | "code"; content: string; language?: string }> = [];
+  const parts: Array<{
+    type: "text" | "code";
+    content: string;
+    language?: string;
+  }> = [];
   let lastIndex = 0;
   let match: RegExpExecArray | null;
 
@@ -170,16 +190,20 @@ const AnimatedText = ({ text }: { text: string }) => {
 
 const MessageBubble = ({ message }: { message: Message }) => {
   const isUser = message.role === "user";
-  
+
   return (
-    <div className={`flex items-start gap-4 mb-6 ${isUser ? "flex-row-reverse" : ""}`}>
+    <div
+      className={`flex items-start gap-4 mb-6 ${
+        isUser ? "flex-row-reverse" : ""
+      }`}
+    >
       <Avatar role={message.role} />
-      <div className={`flex-1 max-w-3xl ${isUser ? "text-right" : "text-left"}`}>
+      <div
+        className={`flex-1 max-w-3xl ${isUser ? "text-right" : "text-left"}`}
+      >
         <div
           className={`inline-block rounded-xl px-4 py-3 ${
-            isUser
-              ? "bg-blue-500 text-white"
-              : "bg-zinc-100 text-zinc-700"
+            isUser ? "bg-blue-500 text-white" : "bg-zinc-100 text-zinc-700"
           }`}
         >
           {formatMessage(message.content).map((part, i) =>
@@ -194,7 +218,11 @@ const MessageBubble = ({ message }: { message: Message }) => {
             )
           )}
         </div>
-        <div className={`text-xs text-zinc-400 mt-1 ${isUser ? "text-right" : "text-left"}`}>
+        <div
+          className={`text-xs text-zinc-400 mt-1 ${
+            isUser ? "text-right" : "text-left"
+          }`}
+        >
           {new Date(message.timestamp).toLocaleTimeString()}
         </div>
       </div>
@@ -237,8 +265,8 @@ const ModelSelector = ({
 };
 
 function loadChatsFromStorage(): Chat[] {
-  if (typeof window === 'undefined') return [];
-  
+  if (typeof window === "undefined") return [];
+
   try {
     const savedChats = localStorage.getItem("chats");
     return savedChats ? JSON.parse(savedChats) : [];
@@ -249,8 +277,8 @@ function loadChatsFromStorage(): Chat[] {
 }
 
 function saveChatsToStorage(chats: Chat[]): void {
-  if (typeof window === 'undefined') return;
-  
+  if (typeof window === "undefined") return;
+
   try {
     localStorage.setItem("chats", JSON.stringify(chats));
   } catch (error) {
@@ -286,8 +314,6 @@ export default function ClaudeChatInterface() {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
 
- 
-
   const handleNewChat = () => {
     const newChat: Chat = {
       id: Date.now().toString(),
@@ -304,14 +330,22 @@ export default function ClaudeChatInterface() {
   const toggleMemory = (chatId: string) => {
     setChats((prev) =>
       prev.map((chat) =>
-        chat.id === chatId
-          ? { ...chat, useMemory: !chat.useMemory }
-          : chat
+        chat.id === chatId ? { ...chat, useMemory: !chat.useMemory } : chat
       )
     );
   };
 
+  const handleDeleteChat = (chatId: string) => {
+    setChats((prev) => prev.filter((chat) => chat.id !== chatId));
+    if (activeChat === chatId) {
+      setActiveChat("");
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
+    if (!activeChat) {
+      handleNewChat();
+    }
     e.preventDefault();
     if (!input.trim() || isLoading || !activeChat) return;
 
@@ -349,13 +383,16 @@ export default function ClaudeChatInterface() {
     try {
       // Format the conversation history for Ollama
       let prompt = input;
-      
+
       if (currentChat.useMemory && currentChat.messages.length > 0) {
         const context = currentChat.messages
           .slice(-4) // Get last 4 messages
-          .map(msg => `${msg.role === 'user' ? 'Human' : 'Assistant'}: ${msg.content}`)
-          .join('\n');
-        
+          .map(
+            (msg) =>
+              `${msg.role === "user" ? "Human" : "Assistant"}: ${msg.content}`
+          )
+          .join("\n");
+
         prompt = `${context}\nHuman: ${input}\nAssistant:`;
       }
 
@@ -366,7 +403,8 @@ export default function ClaudeChatInterface() {
           model: model,
           prompt: prompt,
           stream: false,
-          system: "You are a helpful AI assistant. Be concise and clear in your responses.", // Add system prompt
+          system:
+            "You are a helpful AI assistant. Be concise and clear in your responses.", // Add system prompt
           options: {
             temperature: 0.7,
             num_predict: 1024,
@@ -411,7 +449,8 @@ export default function ClaudeChatInterface() {
       console.error("Error:", error);
       const errorMessage: Message = {
         role: "assistant",
-        content: "Sorry, I encountered an error. Please make sure Ollama is running and try again.",
+        content:
+          "Sorry, I encountered an error. Please make sure Ollama is running and try again.",
         timestamp: new Date(),
         saved: false,
       };
@@ -433,7 +472,6 @@ export default function ClaudeChatInterface() {
     }
   };
 
-  
   const currentChat = chats.find((chat) => chat.id === activeChat);
 
   return (
@@ -460,17 +498,32 @@ export default function ClaudeChatInterface() {
               }`}
             >
               <div className="flex items-center justify-between">
-                <div className="text-sm font-medium truncate">{chat.title}</div>
-                <div className="flex items-center gap-2">
-                  <Switch
-                    checked={chat.useMemory}
-                    onCheckedChange={() => toggleMemory(chat.id)}
-                    onClick={(e) => e.stopPropagation()}
-                  />
+                <div>
+                  <div className="text-sm font-medium truncate">
+                    {chat.title}
+                  </div>
+                  <div className="text-xs text-zinc-500 mt-1">
+                    {new Date(chat.timestamp).toLocaleString()}
+                  </div>
                 </div>
-              </div>
-              <div className="text-xs text-zinc-500 mt-1">
-                {new Date(chat.timestamp).toLocaleString()}
+                <div className="flex flex-col min-h-full justify-between items-center h-full ">
+                  <div className="flex items-center gap-2">
+                    <Switch
+                      checked={chat.useMemory}
+                      onCheckedChange={() => toggleMemory(chat.id)}
+                      onClick={(e) => e.stopPropagation()}
+                    />
+                  </div>
+                  <div className="flex items-center m-2 mx-auto">
+                    <Trash2Icon
+                      size={16}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleDeleteChat(chat.id);
+                      }}
+                    />
+                  </div>
+                </div>
               </div>
             </div>
           ))}
@@ -500,13 +553,13 @@ export default function ClaudeChatInterface() {
         </div>
 
         <div className="flex-1 overflow-y-auto px-8 py-6">
-          {currentChat?.messages.map((message, index) => (
+          {currentChat?.messages.map((message, index) =>
             message.isTyping ? (
               <TypingIndicator key={index} />
             ) : (
               <MessageBubble key={index} message={message} />
             )
-          ))}
+          )}
           <div ref={messagesEndRef} />
         </div>
 
@@ -523,7 +576,7 @@ export default function ClaudeChatInterface() {
           />
           <button
             type="submit"
-            disabled={isLoading || !input.trim() || !activeChat}
+            disabled={isLoading || !input.trim()}
             className="px-4 py-3 bg-blue-500 text-white rounded-xl hover:bg-blue-600 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {isLoading ? (

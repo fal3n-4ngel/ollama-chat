@@ -205,6 +205,72 @@ function saveChatsToStorage(chats: Chat[]): void {
     console.error("Error saving chats to localStorage:", error);
   }
 }
+const TypingIndicator = () => (
+  <div className="flex items-center gap-4">
+    <Avatar role="assistant" gravatarEmail={  typeof window !== "undefined"
+        ? localStorage.getItem("gravatarEmail") || ""
+        : ""} />
+    <div className="flex space-x-2 p-3 bg-zinc-100 rounded-xl w-20">
+      <div
+        className="w-2 h-2 bg-zinc-400 rounded-full animate-bounce"
+        style={{ animationDelay: "0ms" }}
+      />
+      <div
+        className="w-2 h-2 bg-zinc-400 rounded-full animate-bounce"
+        style={{ animationDelay: "150ms" }}
+      />
+      <div
+        className="w-2 h-2 bg-zinc-400 rounded-full animate-bounce"
+        style={{ animationDelay: "300ms" }}
+      />
+    </div>
+  </div>
+);
+const MessageBubble = ({ message }: { message: Message }) => {
+  const isUser = message.role === "user";
+
+  return (
+    <div
+      className={`flex items-start gap-4 mb-6 ${
+        isUser ? "flex-row-reverse" : ""
+      }`}
+    >
+      <Avatar role={message.role} gravatarEmail={  typeof window !== "undefined"
+        ? localStorage.getItem("gravatarEmail") || ""
+        : ""} />
+      <div
+        className={`flex-1 max-w-3xl ${isUser ? "text-right" : "text-left"}`}
+      >
+        <div
+          className={`inline-block rounded-xl px-4 py-3 ${
+            isUser ? "bg-blue-500 text-white" : "bg-zinc-100 text-zinc-700"
+          }`}
+        >
+          {formatMessage(message.content).map((part, i) =>
+            part.type === "text" ? (
+              <AnimatedText key={i} text={part.content} />
+            ) : (
+              <CodeBlock
+                key={i}
+                code={part.content}
+                language={part.language || "python"}
+              />
+            )
+          )}
+        </div>
+        <div
+          className={`text-xs text-zinc-400 mt-1 ${
+            isUser ? "text-right" : "text-left"
+          }`}
+        >
+          {new Date(message.timestamp).toLocaleTimeString()}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+
 
 export default function ClaudeChatInterface() {
   const [chats, setChats] = useState<Chat[]>([]);
@@ -243,66 +309,6 @@ export default function ClaudeChatInterface() {
   };
 
 
-  const TypingIndicator = () => (
-    <div className="flex items-center gap-4">
-      <Avatar role="assistant" gravatarEmail={settings.gravatarEmail} />
-      <div className="flex space-x-2 p-3 bg-zinc-100 rounded-xl w-20">
-        <div
-          className="w-2 h-2 bg-zinc-400 rounded-full animate-bounce"
-          style={{ animationDelay: "0ms" }}
-        />
-        <div
-          className="w-2 h-2 bg-zinc-400 rounded-full animate-bounce"
-          style={{ animationDelay: "150ms" }}
-        />
-        <div
-          className="w-2 h-2 bg-zinc-400 rounded-full animate-bounce"
-          style={{ animationDelay: "300ms" }}
-        />
-      </div>
-    </div>
-  );
-  const MessageBubble = ({ message }: { message: Message }) => {
-    const isUser = message.role === "user";
-
-    return (
-      <div
-        className={`flex items-start gap-4 mb-6 ${
-          isUser ? "flex-row-reverse" : ""
-        }`}
-      >
-        <Avatar role={message.role} gravatarEmail={settings.gravatarEmail} />
-        <div
-          className={`flex-1 max-w-3xl ${isUser ? "text-right" : "text-left"}`}
-        >
-          <div
-            className={`inline-block rounded-xl px-4 py-3 ${
-              isUser ? "bg-blue-500 text-white" : "bg-zinc-100 text-zinc-700"
-            }`}
-          >
-            {formatMessage(message.content).map((part, i) =>
-              part.type === "text" ? (
-                <AnimatedText key={i} text={part.content} />
-              ) : (
-                <CodeBlock
-                  key={i}
-                  code={part.content}
-                  language={part.language || "python"}
-                />
-              )
-            )}
-          </div>
-          <div
-            className={`text-xs text-zinc-400 mt-1 ${
-              isUser ? "text-right" : "text-left"
-            }`}
-          >
-            {new Date(message.timestamp).toLocaleTimeString()}
-          </div>
-        </div>
-      </div>
-    );
-  };
 
   // Dark mode effect
   useEffect(() => {

@@ -46,7 +46,7 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-y-0 right-0 w-80 bg-white border-l-2 border-black shadow-[4px_4px_0_rgba(0,0,0,1)] transform transition-transform duration-200 z-50">
+    <div className="fixed inset-y-0 right-0 w-80 bg-white dark:bg-[#2d2d2d] border-l-2 border-black shadow-[4px_4px_0_rgba(0,0,0,1)] transform transition-transform duration-200 z-50">
       <div className="p-4 border-b-2 border-black">
         <div className="flex items-center justify-between">
           <h2 className="text-xl font-bold flex items-center gap-2">
@@ -88,7 +88,7 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({
             type="text"
             value={settings.baseUrl}
             onChange={(e) => onSettingChange('baseUrl', e.target.value)}
-            className="w-full px-3 py-2 border-2 border-black rounded-lg shadow-[2px_2px_0_rgba(0,0,0,1)]"
+            className="w-full px-3 py-2 border-2 border-black rounded-lg shadow-[2px_2px_0_rgba(0,0,0,1)] dark:bg-[#4d4d4d]"
             placeholder="http://localhost:11434/api"
           />
         </div>
@@ -103,7 +103,7 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({
             type="email"
             value={settings.gravatarEmail}
             onChange={handleGravatarEmailChange} // Use the new handler
-            className="w-full px-3 py-2 border-2 border-black rounded-lg shadow-[2px_2px_0_rgba(0,0,0,1)]"
+            className="w-full px-3 py-2 border-2 border-black rounded-lg shadow-[2px_2px_0_rgba(0,0,0,1)] dark:bg-[#4d4d4d]"
           />
         </div>
 
@@ -131,7 +131,7 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({
             type="password"
             value={settings.apiKey}
             onChange={(e) => onSettingChange('apiKey', e.target.value)}
-            className="w-full px-3 py-2 border-2 border-black rounded-lg shadow-[2px_2px_0_rgba(0,0,0,1)]"
+            className="w-full px-3 py-2 border-2 border-black rounded-lg shadow-[2px_2px_0_rgba(0,0,0,1)] dark:bg-[#4d4d4d]"
             placeholder="Enter your API key"
           />
         </div>

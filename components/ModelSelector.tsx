@@ -1,5 +1,8 @@
 "use client"
 import { useState, useEffect } from 'react';
+import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from '@radix-ui/react-dropdown-menu';
+import { Bot, ChevronDown } from 'lucide-react';
+
 
 interface OllamaModel {
   name: string;
@@ -40,38 +43,81 @@ const ModelSelector = ({
 
   if (loading) {
     return (
-      <select 
-        disabled 
-        className="w-full p-3 border border-zinc-200 rounded-xl bg-white focus:outline-none focus:ring-2 focus:ring-black transition-all duration-200 text-gray-500"
-      >
-        <option>Loading models...</option>
-      </select>
+      <DropdownMenu>
+        <DropdownMenuTrigger
+          className="flex items-center gap-2 px-3 py-2 border-2 border-black rounded-lg hover:bg-blue-400 dark:bg-[#2d2d2d] bg-white shadow-[3px_3px_0_rgba(0,0,0,1)] transition-all"
+        >
+          <div className="flex items-center gap-2">
+            <Bot className="w-5 h-5" />
+            <span className="font-bold">Loading models...</span>
+          </div>
+          <ChevronDown className="w-4 h-4" />
+        </DropdownMenuTrigger>
+        <DropdownMenuContent
+          align="end"
+          className="border-2 border-black bg-white dark:bg-[#2d2d2d] rounded-lg shadow-[4px_4px_0_rgba(0,0,0,1)] overflow-hidden"
+        >
+          <DropdownMenuItem disabled className="px-4 py-3">
+            Loading models...
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
     );
   }
 
   if (error) {
     return (
-      <select 
-        disabled 
-        className="w-full p-3 border border-zinc-200 rounded-xl bg-white focus:outline-none focus:ring-2 focus:ring-black transition-all duration-200 text-red-500"
-      >
-        <option>Error loading models</option>
-      </select>
+      <DropdownMenu>
+        <DropdownMenuTrigger
+          className="flex items-center gap-2 px-3 py-2 border-2 border-black dark:bg-[#2d2d2d] rounded-lg hover:bg-blue-400 bg-white shadow-[3px_3px_0_rgba(0,0,0,1)] transition-all"
+        >
+          <div className="flex items-center gap-2">
+            <Bot className="w-5 h-5" />
+            <span className="font-bold">Error loading models</span>
+          </div>
+          <ChevronDown className="w-4 h-4" />
+        </DropdownMenuTrigger>
+        <DropdownMenuContent
+          align="end"
+          className="border-2 border-black dark:bg-[#2d2d2d] bg-white rounded-lg shadow-[4px_4px_0_rgba(0,0,0,1)] overflow-hidden"
+        >
+          <DropdownMenuItem disabled className="px-4 py-3">
+            Error loading models
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
     );
   }
 
   return (
-    <select
-      value={currentModel}
-      onChange={(e) => onModelChange(e.target.value)}
-      className="w-full p-3 border border-zinc-200 rounded-xl bg-white focus:outline-none focus:ring-2 focus:ring-black transition-all duration-200"
-    >
-      {models.map((model) => (
-        <option key={model.digest} value={model.name}>
-          {model.name} ({Math.round(model.size / (1024 * 1024 * 1024))}GB)
-        </option>
-      ))}
-    </select>
+    <DropdownMenu>
+      <DropdownMenuTrigger
+        className="flex items-center gap-2 px-3 py-2 border-2 border-black rounded-lg hover:bg-blue-400 bg-white shadow-[3px_3px_0_rgba(0,0,0,1)] transition-all"
+      >
+        <div className="flex items-center gap-2">
+          <Bot className="w-5 h-5" />
+          <span className="font-bold">{currentModel}</span>
+        </div>
+        <ChevronDown className="w-4 h-4" />
+      </DropdownMenuTrigger>
+      <DropdownMenuContent
+        align="end"
+        className="border-2 border-black bg-white rounded-lg shadow-[4px_4px_0_rgba(0,0,0,1)] overflow-hidden"
+      >
+        {models.map((model) => (
+          <DropdownMenuItem
+            key={model.digest}
+            onClick={() => onModelChange(model.name)}
+            className="px-4 py-3 hover:bg-blue-400 border-b border-black last:border-b-0 cursor-pointer"
+          >
+            <div>
+              <div className="font-bold">{model.name}</div>
+              <div className="text-xs text-zinc-700">{Math.round(model.size / (1024 * 1024 * 1024))}GB</div>
+            </div>
+          </DropdownMenuItem>
+        ))}
+      </DropdownMenuContent>
+    </DropdownMenu>
   );
 };
 

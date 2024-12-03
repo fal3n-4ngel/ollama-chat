@@ -15,6 +15,8 @@ import {
   LucideDelete,
   Trash2Icon,
   Settings,
+  AlertTriangle,
+  RefreshCw,
 } from "lucide-react";
 import hljs from "highlight.js";
 import "highlight.js/styles/github-dark.css";
@@ -28,6 +30,8 @@ import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import SettingsPanel from "@/components/SettingsPanel";
 import { getGravatarUrl } from "@/lib/utils";
+import ModelSelector from "@/components/ModelSelector";
+import { useRouter } from "next/navigation";
 
 interface Message {
   role: "user" | "assistant";
@@ -59,15 +63,15 @@ const MODELS: ModelOption[] = [
     name: "Llava",
     description: "Multimodal model for vision and language",
   },
-  {
-    id: "codellama",
-    name: "Code Llama",
-    description: "Specialized for code generation",
-  },
 ];
 
-
-const Avatar = ({ role, gravatarEmail }: { role: "user" | "assistant", gravatarEmail?: string }) => {
+const Avatar = ({
+  role,
+  gravatarEmail,
+}: {
+  role: "user" | "assistant";
+  gravatarEmail?: string;
+}) => {
   return (
     <div
       className={`w-8 h-8 rounded-full flex items-center justify-center ${
@@ -76,10 +80,10 @@ const Avatar = ({ role, gravatarEmail }: { role: "user" | "assistant", gravatarE
     >
       {role === "user" ? (
         gravatarEmail ? (
-          <img 
-            src={getGravatarUrl(gravatarEmail, 200)} 
-            alt="User Avatar" 
-            className="w-8 h-8 rounded-full object-cover" 
+          <img
+            src={getGravatarUrl(gravatarEmail, 200)}
+            alt="User Avatar"
+            className="w-8 h-8 rounded-full object-cover"
           />
         ) : (
           <User className="w-5 h-5 text-white" />
@@ -90,7 +94,6 @@ const Avatar = ({ role, gravatarEmail }: { role: "user" | "assistant", gravatarE
     </div>
   );
 };
-
 
 const CodeBlock = ({ code, language }: { code: string; language: string }) => {
   const [copied, setCopied] = useState(false);
@@ -181,50 +184,6 @@ const AnimatedText = ({ text }: { text: string }) => {
   return <span>{displayText}</span>;
 };
 
-
-
-const ModelSelector = ({
-  currentModel,
-  onModelChange,
-}: {
-  currentModel: string;
-  onModelChange: (model: string) => void;
-}) => {
-  const selectedModel = MODELS.find((m) => m.id === currentModel) || MODELS[0];
-
-  return (
-    <DropdownMenu>
-      <DropdownMenuTrigger
-        className="flex items-center gap-2 px-3 py-2 border-2 border-black rounded-lg 
-        hover:bg-yellow-400 bg-white shadow-[3px_3px_0_rgba(0,0,0,1)] transition-all"
-      >
-        <div className="flex items-center gap-2">
-          <Bot className="w-5 h-5" />
-          <span className="font-bold">{selectedModel.name}</span>
-        </div>
-        <ChevronDown className="w-4 h-4" />
-      </DropdownMenuTrigger>
-      <DropdownMenuContent
-        align="end"
-        className="border-2 border-black bg-white rounded-lg shadow-[4px_4px_0_rgba(0,0,0,1)] overflow-hidden"
-      >
-        {MODELS.map((model) => (
-          <DropdownMenuItem
-            key={model.id}
-            onClick={() => onModelChange(model.id)}
-            className="px-4 py-3 hover:bg-yellow-400 border-b border-black last:border-b-0 cursor-pointer"
-          >
-            <div>
-              <div className="font-bold">{model.name}</div>
-              <div className="text-xs text-zinc-700">{model.description}</div>
-            </div>
-          </DropdownMenuItem>
-        ))}
-      </DropdownMenuContent>
-    </DropdownMenu>
-  );
-};
-
 function loadChatsFromStorage(): Chat[] {
   if (typeof window === "undefined") return [];
 
@@ -257,7 +216,10 @@ export default function ClaudeChatInterface() {
   const [settings, setSettings] = useState({
     debugMode: false,
     baseUrl: "http://localhost:11434/api/generate",
-    gravatarEmail:localStorage.getItem('gravatarEmail') || "",
+    gravatarEmail:
+      typeof window !== "undefined"
+        ? localStorage.getItem("gravatarEmail") || ""
+        : "",
     historySize: 10,
     darkMode: false,
     soundEnabled: true,
@@ -265,10 +227,25 @@ export default function ClaudeChatInterface() {
     temperature: 0.7,
   });
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [error, setError] = useState(false);
+ 
+  const fetchModels = async () => {
+    try {
+      const response = await fetch("http://localhost:11434/api/tags");
+      if (!response.ok) {
+        throw new Error("Failed to fetch models");
+      }
+      const data = await response.json();
+      setError(false);
+    } catch (err) {
+      setError(true);
+    }
+  };
+
 
   const TypingIndicator = () => (
     <div className="flex items-center gap-4">
-      <Avatar role="assistant" gravatarEmail={settings.gravatarEmail}/>
+      <Avatar role="assistant" gravatarEmail={settings.gravatarEmail} />
       <div className="flex space-x-2 p-3 bg-zinc-100 rounded-xl w-20">
         <div
           className="w-2 h-2 bg-zinc-400 rounded-full animate-bounce"
@@ -287,14 +264,14 @@ export default function ClaudeChatInterface() {
   );
   const MessageBubble = ({ message }: { message: Message }) => {
     const isUser = message.role === "user";
-  
+
     return (
       <div
         className={`flex items-start gap-4 mb-6 ${
           isUser ? "flex-row-reverse" : ""
         }`}
       >
-        <Avatar role={message.role}  gravatarEmail={settings.gravatarEmail}/>
+        <Avatar role={message.role} gravatarEmail={settings.gravatarEmail} />
         <div
           className={`flex-1 max-w-3xl ${isUser ? "text-right" : "text-left"}`}
         >
@@ -326,17 +303,19 @@ export default function ClaudeChatInterface() {
       </div>
     );
   };
-  
 
-
-   // Dark mode effect
-   useEffect(() => {
+  // Dark mode effect
+  useEffect(() => {
     if (settings.darkMode) {
-      document.documentElement.classList.add('dark');
+      document.documentElement.classList.add("dark");
     } else {
-      document.documentElement.classList.remove('dark');
+      document.documentElement.classList.remove("dark");
     }
   }, [settings.darkMode]);
+
+  useEffect(() => {
+    fetchModels();
+  }, []);
 
   useEffect(() => {
     setChats(loadChatsFromStorage());
@@ -528,11 +507,11 @@ export default function ClaudeChatInterface() {
         }}
       />
       {/* Sidebar */}
-      <div className="w-80 border-r-2 border-black flex flex-col bg-white">
+      <div className="w-80 border-r-2 border-black flex flex-col bg-white dark:bg-[#3d3d3d] ">
         <div className="p-4 border-b-2 border-black">
           <button
             onClick={handleNewChat}
-            className="w-full p-3 bg-yellow-400 text-black rounded-lg 
+            className="w-full p-3 bg-blue-400 text-black rounded-lg 
             border-2 border-black shadow-[4px_4px_0_rgba(0,0,0,1)] 
             hover:translate-x-[3px] hover:translate-y-[3px] 
             hover:shadow-[2px_2px_0_rgba(0,0,0,1)] 
@@ -551,14 +530,14 @@ export default function ClaudeChatInterface() {
               className={`p-4 cursor-pointer border-b border-black transition-colors duration-200 
                 ${
                   activeChat === chat.id
-                    ? "bg-yellow-400 border-2 border-black"
+                    ? "bg-blue-400 border-2 border-black"
                     : "hover:bg-zinc-100"
                 }`}
             >
               <div className="flex items-center justify-between">
                 <div>
                   <div className="text-sm font-bold truncate">{chat.title}</div>
-                  <div className="text-xs text-zinc-700 mt-1">
+                  <div className="text-xs text-zinc-700 mt-1 dark:text-zinc-300">
                     {new Date(chat.timestamp).toLocaleString()}
                   </div>
                 </div>
@@ -579,8 +558,8 @@ export default function ClaudeChatInterface() {
       </div>
 
       {/* Main Chat Area */}
-      <div className="flex-1 flex flex-col bg-white border-l-2 border-black">
-        <div className="border-b-2 border-black px-8 py-4 flex items-center justify-between bg-white">
+      <div className="flex-1 flex flex-col bg-white border-l-2 border-black dark:bg-[#3d3d3d]">
+        <div className="border-b-2 border-black px-8 py-4 flex items-center justify-between bg-white dark:bg-[#3d3d3d]">
           <div className="flex items-center gap-3">
             <ModelSelector currentModel={model} onModelChange={setModel} />
           </div>
@@ -602,54 +581,88 @@ export default function ClaudeChatInterface() {
 
             <button
               onClick={() => setIsSettingsOpen(true)}
-              className="p-2 hover:bg-yellow-400 rounded-lg border-2 border-black"
+              className="p-2 hover:bg-blue-400 rounded-lg border-2 border-black"
             >
               <Settings size={20} />
             </button>
           </div>
         </div>
+        {!error && (
+          <>
+            <div className="flex-1 overflow-y-auto px-8 py-6 bg-white dark:bg-[#3d3d3d]">
+              {currentChat?.messages.map((message, index) =>
+                message.isTyping ? (
+                  <TypingIndicator key={index} />
+                ) : (
+                  <MessageBubble key={index} message={message} />
+                )
+              )}
 
-        <div className="flex-1 overflow-y-auto px-8 py-6 bg-white">
-          {currentChat?.messages.map((message, index) =>
-            message.isTyping ? (
-              <TypingIndicator key={index} />
-            ) : (
-              <MessageBubble key={index} message={message} />
-            )
-          )}
+              <div ref={messagesEndRef} />
+            </div>
 
-          <div ref={messagesEndRef} />
-        </div>
-
-        <form
-          onSubmit={handleSubmit}
-          className="flex items-center gap-4 border-t-2 border-black p-6 bg-white"
-        >
-          <input
-            type="text"
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            placeholder="Type your message..."
-            className="flex-1 px-4 py-3 border-2 border-black rounded-lg 
-            focus:outline-none focus:ring-0 focus:bg-yellow-50 
+            <form
+              onSubmit={handleSubmit}
+              className="flex items-center gap-4 border-t-2 border-black p-6 bg-white dark:bg-[#3d3d3d]"
+            >
+              <input
+                type="text"
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                placeholder="Type your message..."
+                className="flex-1 px-4 py-3 border-2 border-black rounded-lg 
+            focus:outline-none focus:ring-0 focus:bg-blue-50 
             shadow-[3px_3px_0_rgba(0,0,0,1)] transition-all"
-          />
-          <button
-            type="submit"
-            disabled={isLoading || !input.trim()}
-            className="px-4 py-3 bg-blue-500 text-white rounded-lg 
+              />
+              <button
+                type="submit"
+                disabled={isLoading || !input.trim()}
+                className="px-4 py-3 bg-blue-500 text-white rounded-lg 
             border-2 border-black shadow-[4px_4px_0_rgba(0,0,0,1)]
             hover:translate-x-[3px] hover:translate-y-[3px] 
             hover:shadow-[2px_2px_0_rgba(0,0,0,1)] 
             disabled:opacity-50 disabled:cursor-not-allowed transition-all"
-          >
-            {isLoading ? (
-              <Loader2 size={20} className="animate-spin" />
-            ) : (
-              <Send size={20} />
-            )}
-          </button>
-        </form>
+              >
+                {isLoading ? (
+                  <Loader2 size={20} className="animate-spin" />
+                ) : (
+                  <Send size={20} />
+                )}
+              </button>
+            </form>
+          </>
+        )}
+        {error && (
+          <div className="flex flex-col items-center justify-center h-full p-8 text-center bg-white dark:bg-[#3d3d3d] dark:text-white">
+            <AlertTriangle className="w-24 h-24 text-red-500 mb-6" />
+            <h2 className="text-2xl font-bold mb-4">Ollama Connection Error</h2>
+            <p className="text-zinc-600 dark:text-zinc-300 mb-6 max-w-md">
+              Unable to connect to the Ollama server. Please ensure Ollama is
+              running and the server is accessible at the specified URL.
+            </p>
+            <div className="flex flex-col items-center gap-4">
+              <button
+              onClick={()=>{ fetchModels(); }}
+                className="px-6 py-3 bg-blue-500 text-white rounded-lg 
+          border-2 border-black shadow-[4px_4px_0_rgba(0,0,0,1)]
+          hover:translate-x-[3px] hover:translate-y-[3px] 
+          hover:shadow-[2px_2px_0_rgba(0,0,0,1)] 
+          transition-all duration-200 flex items-center gap-2"
+              >
+                <RefreshCw size={20} />
+                Retry Connection
+              </button>
+              <div className="text-sm text-zinc-500 dark:text-zinc-400">
+                Troubleshooting tips:
+                <ul className="mt-2 text-left list-disc list-inside">
+                  <li>Check that Ollama is installed and running</li>
+                  <li>Verify the base URL in settings</li>
+                  <li>Ensure the Ollama server is accessible</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

@@ -14,6 +14,7 @@ import {
   DeleteIcon,
   LucideDelete,
   Trash2Icon,
+  Settings,
 } from "lucide-react";
 import hljs from "highlight.js";
 import "highlight.js/styles/github-dark.css";
@@ -25,6 +26,8 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
+import SettingsPanel from "@/components/SettingsPanel";
+import { getGravatarUrl } from "@/lib/utils";
 
 interface Message {
   role: "user" | "assistant";
@@ -63,7 +66,8 @@ const MODELS: ModelOption[] = [
   },
 ];
 
-const Avatar = ({ role }: { role: "user" | "assistant" }) => {
+
+const Avatar = ({ role, gravatarEmail }: { role: "user" | "assistant", gravatarEmail?: string }) => {
   return (
     <div
       className={`w-8 h-8 rounded-full flex items-center justify-center ${
@@ -71,7 +75,15 @@ const Avatar = ({ role }: { role: "user" | "assistant" }) => {
       }`}
     >
       {role === "user" ? (
-        <User className="w-5 h-5 text-white" />
+        gravatarEmail ? (
+          <img 
+            src={getGravatarUrl(gravatarEmail, 200)} 
+            alt="User Avatar" 
+            className="w-8 h-8 rounded-full object-cover" 
+          />
+        ) : (
+          <User className="w-5 h-5 text-white" />
+        )
       ) : (
         <img src="ollama.png" className="w-8 h-8 text-white rounded-full" />
       )}
@@ -79,25 +91,6 @@ const Avatar = ({ role }: { role: "user" | "assistant" }) => {
   );
 };
 
-const TypingIndicator = () => (
-  <div className="flex items-center gap-4">
-    <Avatar role="assistant" />
-    <div className="flex space-x-2 p-3 bg-zinc-100 rounded-xl w-20">
-      <div
-        className="w-2 h-2 bg-zinc-400 rounded-full animate-bounce"
-        style={{ animationDelay: "0ms" }}
-      />
-      <div
-        className="w-2 h-2 bg-zinc-400 rounded-full animate-bounce"
-        style={{ animationDelay: "150ms" }}
-      />
-      <div
-        className="w-2 h-2 bg-zinc-400 rounded-full animate-bounce"
-        style={{ animationDelay: "300ms" }}
-      />
-    </div>
-  </div>
-);
 
 const CodeBlock = ({ code, language }: { code: string; language: string }) => {
   const [copied, setCopied] = useState(false);
@@ -188,47 +181,7 @@ const AnimatedText = ({ text }: { text: string }) => {
   return <span>{displayText}</span>;
 };
 
-const MessageBubble = ({ message }: { message: Message }) => {
-  const isUser = message.role === "user";
 
-  return (
-    <div
-      className={`flex items-start gap-4 mb-6 ${
-        isUser ? "flex-row-reverse" : ""
-      }`}
-    >
-      <Avatar role={message.role} />
-      <div
-        className={`flex-1 max-w-3xl ${isUser ? "text-right" : "text-left"}`}
-      >
-        <div
-          className={`inline-block rounded-xl px-4 py-3 ${
-            isUser ? "bg-blue-500 text-white" : "bg-zinc-100 text-zinc-700"
-          }`}
-        >
-          {formatMessage(message.content).map((part, i) =>
-            part.type === "text" ? (
-              <AnimatedText key={i} text={part.content} />
-            ) : (
-              <CodeBlock
-                key={i}
-                code={part.content}
-                language={part.language || "python"}
-              />
-            )
-          )}
-        </div>
-        <div
-          className={`text-xs text-zinc-400 mt-1 ${
-            isUser ? "text-right" : "text-left"
-          }`}
-        >
-          {new Date(message.timestamp).toLocaleTimeString()}
-        </div>
-      </div>
-    </div>
-  );
-};
 
 const ModelSelector = ({
   currentModel,
@@ -241,7 +194,7 @@ const ModelSelector = ({
 
   return (
     <DropdownMenu>
-      <DropdownMenuTrigger 
+      <DropdownMenuTrigger
         className="flex items-center gap-2 px-3 py-2 border-2 border-black rounded-lg 
         hover:bg-yellow-400 bg-white shadow-[3px_3px_0_rgba(0,0,0,1)] transition-all"
       >
@@ -251,8 +204,8 @@ const ModelSelector = ({
         </div>
         <ChevronDown className="w-4 h-4" />
       </DropdownMenuTrigger>
-      <DropdownMenuContent 
-        align="end" 
+      <DropdownMenuContent
+        align="end"
         className="border-2 border-black bg-white rounded-lg shadow-[4px_4px_0_rgba(0,0,0,1)] overflow-hidden"
       >
         {MODELS.map((model) => (
@@ -294,9 +247,6 @@ function saveChatsToStorage(chats: Chat[]): void {
   }
 }
 
-
-
-
 export default function ClaudeChatInterface() {
   const [chats, setChats] = useState<Chat[]>([]);
   const [activeChat, setActiveChat] = useState<string>("");
@@ -304,6 +254,89 @@ export default function ClaudeChatInterface() {
   const [model, setModel] = useState("llava");
   const [isLoading, setIsLoading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const [settings, setSettings] = useState({
+    debugMode: false,
+    baseUrl: "http://localhost:11434/api/generate",
+    gravatarEmail:localStorage.getItem('gravatarEmail') || "",
+    historySize: 10,
+    darkMode: false,
+    soundEnabled: true,
+    apiKey: "",
+    temperature: 0.7,
+  });
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+
+  const TypingIndicator = () => (
+    <div className="flex items-center gap-4">
+      <Avatar role="assistant" gravatarEmail={settings.gravatarEmail}/>
+      <div className="flex space-x-2 p-3 bg-zinc-100 rounded-xl w-20">
+        <div
+          className="w-2 h-2 bg-zinc-400 rounded-full animate-bounce"
+          style={{ animationDelay: "0ms" }}
+        />
+        <div
+          className="w-2 h-2 bg-zinc-400 rounded-full animate-bounce"
+          style={{ animationDelay: "150ms" }}
+        />
+        <div
+          className="w-2 h-2 bg-zinc-400 rounded-full animate-bounce"
+          style={{ animationDelay: "300ms" }}
+        />
+      </div>
+    </div>
+  );
+  const MessageBubble = ({ message }: { message: Message }) => {
+    const isUser = message.role === "user";
+  
+    return (
+      <div
+        className={`flex items-start gap-4 mb-6 ${
+          isUser ? "flex-row-reverse" : ""
+        }`}
+      >
+        <Avatar role={message.role}  gravatarEmail={settings.gravatarEmail}/>
+        <div
+          className={`flex-1 max-w-3xl ${isUser ? "text-right" : "text-left"}`}
+        >
+          <div
+            className={`inline-block rounded-xl px-4 py-3 ${
+              isUser ? "bg-blue-500 text-white" : "bg-zinc-100 text-zinc-700"
+            }`}
+          >
+            {formatMessage(message.content).map((part, i) =>
+              part.type === "text" ? (
+                <AnimatedText key={i} text={part.content} />
+              ) : (
+                <CodeBlock
+                  key={i}
+                  code={part.content}
+                  language={part.language || "python"}
+                />
+              )
+            )}
+          </div>
+          <div
+            className={`text-xs text-zinc-400 mt-1 ${
+              isUser ? "text-right" : "text-left"
+            }`}
+          >
+            {new Date(message.timestamp).toLocaleTimeString()}
+          </div>
+        </div>
+      </div>
+    );
+  };
+  
+
+
+   // Dark mode effect
+   useEffect(() => {
+    if (settings.darkMode) {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+  }, [settings.darkMode]);
 
   useEffect(() => {
     setChats(loadChatsFromStorage());
@@ -407,7 +440,7 @@ export default function ClaudeChatInterface() {
         prompt = `${context}\nHuman: ${input}\nAssistant:`;
       }
 
-      const response = await fetch("http://localhost:11434/api/generate", {
+      const response = await fetch(settings.baseUrl, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -485,7 +518,15 @@ export default function ClaudeChatInterface() {
 
   const currentChat = chats.find((chat) => chat.id === activeChat);
   return (
-    <div className="h-screen flex bg-white">
+    <div className="h-screen flex bg-white dark:bg-[#3d3d3d] dark:text-white">
+      <SettingsPanel
+        isOpen={isSettingsOpen}
+        onClose={() => setIsSettingsOpen(false)}
+        settings={settings}
+        onSettingChange={(key, value) => {
+          setSettings((prev) => ({ ...prev, [key]: value }));
+        }}
+      />
       {/* Sidebar */}
       <div className="w-80 border-r-2 border-black flex flex-col bg-white">
         <div className="p-4 border-b-2 border-black">
@@ -508,15 +549,15 @@ export default function ClaudeChatInterface() {
               key={chat.id}
               onClick={() => setActiveChat(chat.id)}
               className={`p-4 cursor-pointer border-b border-black transition-colors duration-200 
-                ${activeChat === chat.id 
-                  ? "bg-yellow-400 border-2 border-black" 
-                  : "hover:bg-zinc-100"}`}
+                ${
+                  activeChat === chat.id
+                    ? "bg-yellow-400 border-2 border-black"
+                    : "hover:bg-zinc-100"
+                }`}
             >
               <div className="flex items-center justify-between">
                 <div>
-                  <div className="text-sm font-bold truncate">
-                    {chat.title}
-                  </div>
+                  <div className="text-sm font-bold truncate">{chat.title}</div>
                   <div className="text-xs text-zinc-700 mt-1">
                     {new Date(chat.timestamp).toLocaleString()}
                   </div>
@@ -543,32 +584,40 @@ export default function ClaudeChatInterface() {
           <div className="flex items-center gap-3">
             <ModelSelector currentModel={model} onModelChange={setModel} />
           </div>
-          {currentChat && (
-            <div className="flex items-center gap-4">
-              <div className="flex items-center gap-2">
-                <Label htmlFor="memory" className="text-sm font-bold">
-                  Memory
-                </Label>
-                <Switch
-                  id="memory"
-                  checked={currentChat.useMemory}
-                  onCheckedChange={() => toggleMemory(currentChat.id)}
-                />
+          <div className="flex items-center justify-center gap-8">
+            {currentChat && (
+              <div className="flex items-center gap-4">
+                <div className="flex items-center gap-2">
+                  <Label htmlFor="memory" className="text-sm font-bold">
+                    Memory
+                  </Label>
+                  <Switch
+                    id="memory"
+                    checked={currentChat.useMemory}
+                    onCheckedChange={() => toggleMemory(currentChat.id)}
+                  />
+                </div>
               </div>
-            </div>
-          )}
+            )}
+
+            <button
+              onClick={() => setIsSettingsOpen(true)}
+              className="p-2 hover:bg-yellow-400 rounded-lg border-2 border-black"
+            >
+              <Settings size={20} />
+            </button>
+          </div>
         </div>
 
         <div className="flex-1 overflow-y-auto px-8 py-6 bg-white">
-
-        {currentChat?.messages.map((message, index) =>
+          {currentChat?.messages.map((message, index) =>
             message.isTyping ? (
               <TypingIndicator key={index} />
             ) : (
               <MessageBubble key={index} message={message} />
             )
           )}
-         
+
           <div ref={messagesEndRef} />
         </div>
 

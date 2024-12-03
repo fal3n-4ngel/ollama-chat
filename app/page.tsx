@@ -241,22 +241,30 @@ const ModelSelector = ({
 
   return (
     <DropdownMenu>
-      <DropdownMenuTrigger className="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-zinc-100">
+      <DropdownMenuTrigger 
+        className="flex items-center gap-2 px-3 py-2 border-2 border-black rounded-lg 
+        hover:bg-yellow-400 bg-white shadow-[3px_3px_0_rgba(0,0,0,1)] transition-all"
+      >
         <div className="flex items-center gap-2">
           <Bot className="w-5 h-5" />
-          <span className="font-medium">{selectedModel.name}</span>
+          <span className="font-bold">{selectedModel.name}</span>
         </div>
         <ChevronDown className="w-4 h-4" />
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-64">
+      <DropdownMenuContent 
+        align="end" 
+        className="border-2 border-black bg-white rounded-lg shadow-[4px_4px_0_rgba(0,0,0,1)] overflow-hidden"
+      >
         {MODELS.map((model) => (
           <DropdownMenuItem
             key={model.id}
             onClick={() => onModelChange(model.id)}
-            className="flex flex-col items-start py-2"
+            className="px-4 py-3 hover:bg-yellow-400 border-b border-black last:border-b-0 cursor-pointer"
           >
-            <div className="font-medium">{model.name}</div>
-            <div className="text-xs text-zinc-500">{model.description}</div>
+            <div>
+              <div className="font-bold">{model.name}</div>
+              <div className="text-xs text-zinc-700">{model.description}</div>
+            </div>
           </DropdownMenuItem>
         ))}
       </DropdownMenuContent>
@@ -285,6 +293,9 @@ function saveChatsToStorage(chats: Chat[]): void {
     console.error("Error saving chats to localStorage:", error);
   }
 }
+
+
+
 
 export default function ClaudeChatInterface() {
   const [chats, setChats] = useState<Chat[]>([]);
@@ -473,15 +484,18 @@ export default function ClaudeChatInterface() {
   };
 
   const currentChat = chats.find((chat) => chat.id === activeChat);
-
   return (
-    <div className="h-screen flex bg-zinc-50">
+    <div className="h-screen flex bg-white">
       {/* Sidebar */}
-      <div className="w-80 border-r border-zinc-200 flex flex-col bg-white">
-        <div className="p-4 border-b border-zinc-200">
+      <div className="w-80 border-r-2 border-black flex flex-col bg-white">
+        <div className="p-4 border-b-2 border-black">
           <button
             onClick={handleNewChat}
-            className="w-full p-3 bg-black text-white rounded-xl flex items-center justify-center gap-2 hover:bg-zinc-800 transition-colors duration-200"
+            className="w-full p-3 bg-yellow-400 text-black rounded-lg 
+            border-2 border-black shadow-[4px_4px_0_rgba(0,0,0,1)] 
+            hover:translate-x-[3px] hover:translate-y-[3px] 
+            hover:shadow-[2px_2px_0_rgba(0,0,0,1)] 
+            transition-all duration-200 flex items-center justify-center gap-2"
           >
             <MessageSquarePlus size={20} />
             New Chat
@@ -493,36 +507,29 @@ export default function ClaudeChatInterface() {
             <div
               key={chat.id}
               onClick={() => setActiveChat(chat.id)}
-              className={`p-4 cursor-pointer border-b border-zinc-100 transition-colors duration-200 ${
-                activeChat === chat.id ? "bg-zinc-100" : "hover:bg-zinc-50"
-              }`}
+              className={`p-4 cursor-pointer border-b border-black transition-colors duration-200 
+                ${activeChat === chat.id 
+                  ? "bg-yellow-400 border-2 border-black" 
+                  : "hover:bg-zinc-100"}`}
             >
               <div className="flex items-center justify-between">
                 <div>
-                  <div className="text-sm font-medium truncate">
+                  <div className="text-sm font-bold truncate">
                     {chat.title}
                   </div>
-                  <div className="text-xs text-zinc-500 mt-1">
+                  <div className="text-xs text-zinc-700 mt-1">
                     {new Date(chat.timestamp).toLocaleString()}
                   </div>
                 </div>
-                <div className="flex flex-col min-h-full justify-between items-center h-full ">
-                  <div className="flex items-center gap-2">
-                    <Switch
-                      checked={chat.useMemory}
-                      onCheckedChange={() => toggleMemory(chat.id)}
-                      onClick={(e) => e.stopPropagation()}
-                    />
-                  </div>
-                  <div className="flex items-center m-2 mx-auto">
-                    <Trash2Icon
-                      size={16}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleDeleteChat(chat.id);
-                      }}
-                    />
-                  </div>
+                <div className="flex items-center gap-2">
+                  <Trash2Icon
+                    size={16}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleDeleteChat(chat.id);
+                    }}
+                    className="hover:text-red-600"
+                  />
                 </div>
               </div>
             </div>
@@ -531,15 +538,15 @@ export default function ClaudeChatInterface() {
       </div>
 
       {/* Main Chat Area */}
-      <div className="flex-1 flex flex-col bg-white">
-        <div className="border-b border-zinc-200 px-8 py-4 flex items-center justify-between bg-white">
+      <div className="flex-1 flex flex-col bg-white border-l-2 border-black">
+        <div className="border-b-2 border-black px-8 py-4 flex items-center justify-between bg-white">
           <div className="flex items-center gap-3">
             <ModelSelector currentModel={model} onModelChange={setModel} />
           </div>
           {currentChat && (
             <div className="flex items-center gap-4">
               <div className="flex items-center gap-2">
-                <Label htmlFor="memory" className="text-sm text-zinc-600">
+                <Label htmlFor="memory" className="text-sm font-bold">
                   Memory
                 </Label>
                 <Switch
@@ -552,32 +559,40 @@ export default function ClaudeChatInterface() {
           )}
         </div>
 
-        <div className="flex-1 overflow-y-auto px-8 py-6">
-          {currentChat?.messages.map((message, index) =>
+        <div className="flex-1 overflow-y-auto px-8 py-6 bg-white">
+
+        {currentChat?.messages.map((message, index) =>
             message.isTyping ? (
               <TypingIndicator key={index} />
             ) : (
               <MessageBubble key={index} message={message} />
             )
           )}
+         
           <div ref={messagesEndRef} />
         </div>
 
         <form
           onSubmit={handleSubmit}
-          className="flex items-center gap-4 border-t border-zinc-200 p-6 bg-white"
+          className="flex items-center gap-4 border-t-2 border-black p-6 bg-white"
         >
           <input
             type="text"
             value={input}
             onChange={(e) => setInput(e.target.value)}
             placeholder="Type your message..."
-            className="flex-1 px-4 py-3 border border-zinc-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            className="flex-1 px-4 py-3 border-2 border-black rounded-lg 
+            focus:outline-none focus:ring-0 focus:bg-yellow-50 
+            shadow-[3px_3px_0_rgba(0,0,0,1)] transition-all"
           />
           <button
             type="submit"
             disabled={isLoading || !input.trim()}
-            className="px-4 py-3 bg-blue-500 text-white rounded-xl hover:bg-blue-600 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="px-4 py-3 bg-blue-500 text-white rounded-lg 
+            border-2 border-black shadow-[4px_4px_0_rgba(0,0,0,1)]
+            hover:translate-x-[3px] hover:translate-y-[3px] 
+            hover:shadow-[2px_2px_0_rgba(0,0,0,1)] 
+            disabled:opacity-50 disabled:cursor-not-allowed transition-all"
           >
             {isLoading ? (
               <Loader2 size={20} className="animate-spin" />
